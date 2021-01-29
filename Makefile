@@ -1,4 +1,4 @@
-IMAGE_NAME := anubhavmishra/redis-sentinel-proxy
+IMAGE_NAME := mobilefzb/redis-sentinel-proxy-service
 .PHONY: test
 
 .DEFAULT_GOAL := help
@@ -19,7 +19,7 @@ build: ## Build the project
 	docker build -t $(IMAGE_NAME):latest .
 
 run: ## Build and run the project
-	go build . && ./redis-sentinel-proxy
+	go build . && ./redis-sentinel-proxy-service
 
 clean:
 	-rm -rf build

@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	masterAddr *net.TCPAddr
-	raddr      *net.TCPAddr
-	saddr      *net.TCPAddr
+	masterAddrChan chan *net.TCPAddr = make(chan *net.TCPAddr, 10)
+	raddr          *net.TCPAddr
+	saddrs         []*net.TCPAddr
 
 	localAddr    = flag.String("listen", ":9999", "local address")
-	sentinelAddr = flag.String("sentinel", ":26379", "remote address")
+	sentinelAddr = flag.String("sentinel", ":26379", "remote address, split with ','")
 	masterName   = flag.String("master", "", "name of the master redis node")
 )
 
@@ -26,11 +26,31 @@ func main() {
 
 	laddr, err := net.ResolveTCPAddr("tcp", *localAddr)
 	if err != nil {
-		log.Fatal("Failed to resolve local address: %s", err)
+		log.Fatal("Failed to resolve local address: ", err)
 	}
-	saddr, err = net.ResolveTCPAddr("tcp", *sentinelAddr)
-	if err != nil {
-		log.Fatal("Failed to resolve sentinel address: %s", err)
+	// check if "," in the sentinelAddr string
+	if strings.Contains(*sentinelAddr, ",") {
+		// split string with ","
+		sentinelAddrs := strings.Split(*sentinelAddr, ",")
+		for _, addr := range sentinelAddrs {
+			saddr, err := net.ResolveTCPAddr("tcp", addr)
+			if err != nil {
+				log.Fatal("Failed to resolve sentinel address ", addr, " : ", err)
+				continue
+			}
+			saddrs = append(saddrs, saddr)
+		}
+	} else {
+		// take it as a single addr
+		saddr, err := net.ResolveTCPAddr("tcp", *sentinelAddr)
+		if err != nil {
+			log.Fatal("Failed to resolve sentinel address ", *sentinelAddr, " : ", err)
+		} else {
+			saddrs = append(saddrs, saddr)
+		}
+	}
+	if len(saddrs) == 0 {
+		log.Fatal("Failed to get sentinel address.")
 	}
 
 	go master()
@@ -46,19 +66,24 @@ func main() {
 			log.Println(err)
 			continue
 		}
-
-		go proxy(conn, masterAddr)
+		go proxy(conn)
 	}
 }
 
 func master() {
-	var err error
+	var inx = 0
 	for {
-		masterAddr, err = getMasterAddr(saddr, *masterName)
+		masterAddr, err := getMasterAddr(saddrs[inx%len(saddrs)], *masterName)
 		if err != nil {
-			log.Println(err)
+			log.Println("Failed to get master addr from ", saddrs[inx%len(saddrs)], " due to ", err)
+			// try next addr
+			inx += 1
+			continue
 		}
+		masterAddrChan <- masterAddr
 		time.Sleep(1 * time.Second)
+		// balance
+		inx += 1
 	}
 }
 
@@ -67,10 +92,11 @@ func pipe(r io.Reader, w io.WriteCloser) {
 	w.Close()
 }
 
-func proxy(local io.ReadWriteCloser, remoteAddr *net.TCPAddr) {
+func proxy(local io.ReadWriteCloser) {
+	remoteAddr := <-masterAddrChan
 	remote, err := net.DialTCP("tcp", nil, remoteAddr)
 	if err != nil {
-		log.Println(err)
+		log.Println("Failed to connect ", remoteAddr, " due to ", err)
 		local.Close()
 		return
 	}

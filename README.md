@@ -1,4 +1,4 @@
-redis-sentinel-proxy
+redis-sentinel-proxy-service
 ====================
 
 Small command utility that:
@@ -10,14 +10,14 @@ Small command utility that:
 
 Usage:
 
-`./redis-sentinel-proxy -listen IP:PORT -sentinel :SENTINEL_PORT -master NAME`
+`./redis-sentinel-proxy-service -listen IP:PORT -sentinel IP1:SENTINEL_PORT,IP2:SENTINEL_PORT -master NAME`
 
 ## Usage
 
-Edit `kubernetes/redis-sentinel-proxy-deployment.yaml`:
+Edit `kubernetes/redis-sentinel-proxy-service-deployment.yaml`:
 
 ```bash
-vim kubernetes/redis-sentinel-proxy-deployment.yaml
+vim kubernetes/redis-sentinel-proxy-service-deployment.yaml
 ...
         args:
           - "-master"
@@ -26,23 +26,23 @@ vim kubernetes/redis-sentinel-proxy-deployment.yaml
           - "redis-sentinel.$(NAMESPACE):26379" # change this to the sentinel address
 ```
 
-Create `redis-sentinel-proxy-deployment` that uses `redis-sentinel-proxy`:
+Create `redis-sentinel-proxy-service-deployment` that uses `redis-sentinel-proxy-service`:
 
 ```bash
-kubectl apply -f kubernetes/redis-sentinel-proxy-deployment.yaml
-deployment "redis-sentinel-proxy" configured
+kubectl apply -f kubernetes/redis-sentinel-proxy-service-deployment.yaml
+deployment "redis-sentinel-proxy-service" configured
 ```
 
 Check if deployment is running: 
 
 ```bash
 kubectl get pods
-redis-sentinel-proxy-2064359825-s4n0k   1/1       Running   0          1d
+redis-sentinel-proxy-service-2064359825-s4n0k   1/1       Running   0          1d
 ```
 
-Expose `redis-sentinel-proxy-deployment`:
+Expose `redis-sentinel-proxy-service-deployment`:
 
 ```bash
-kubectl apply -f kubernetes/redis-sentinel-proxy-service.yaml
+kubectl apply -f kubernetes/redis-sentinel-proxy-service-service.yaml
 ```
 

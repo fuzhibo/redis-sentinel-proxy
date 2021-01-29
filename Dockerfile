@@ -1,8 +1,8 @@
 FROM alpine:3.4
-MAINTAINER Anubhav Mishra <anubhavmishra@me.com>
+LABEL maintainer="ZhiBo Fu <fuzhibo@tom.com>"
 
 # copy binary
-COPY redis-sentinel-proxy /usr/local/bin/redis-sentinel-proxy
+COPY redis-sentinel-proxy-service /usr/local/bin/redis-sentinel-proxy-service
 
-ENTRYPOINT ["/usr/local/bin/redis-sentinel-proxy"]
+ENTRYPOINT ["/usr/local/bin/redis-sentinel-proxy-service"]
 CMD ["-master", "mymaster"]
