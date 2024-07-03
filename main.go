@@ -72,18 +72,27 @@ func main() {
 
 func master() {
 	var inx = 0
+	var err_count = 0
 	for {
+		if err_count > 100 {
+			log.Fatal("Failed get master addr from ", saddrs[inx%len(saddrs)], " will not retry...")
+		}
 		masterAddr, err := getMasterAddr(saddrs[inx%len(saddrs)], *masterName)
 		if err != nil {
 			log.Println("Failed to get master addr from ", saddrs[inx%len(saddrs)], " due to ", err)
 			// try next addr
 			inx += 1
+			err_count += 1
 			continue
 		}
 		masterAddrChan <- masterAddr
 		time.Sleep(1 * time.Second)
 		// balance
 		inx += 1
+		// reset error count
+		if err_count != 0 {
+			err_count = 0
+		}
 	}
 }
 

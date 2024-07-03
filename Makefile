@@ -22,4 +22,5 @@ run: ## Build and run the project
 	go build . && ./redis-sentinel-proxy-service
 
 clean:
-	-rm -rf build
+	go clean
+	rm -rf build
