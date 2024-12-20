@@ -19,9 +19,11 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           args:
+            - "-listen"
+            - "0.0.0.0:6379"
             - "-master"
-            - "primary"
+            - "mymaster"
             - "-sentinel"
-            - "redis-sentinel.$(NAMESPACE):26379"
+            - "redis-sentinel-0:26379,redis-sentinel-1:26379,redis-sentinel-2:26379"
           ports:
-            - containerPort: 9999
+            - containerPort: 6379
